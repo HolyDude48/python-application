@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+    
+    envirnment {
+    	formattedTime = ""
+    	buildVersion  = ""
+    }
+
+    stages {
+        stage('Checkout Stage') {     
+            steps{  
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'pythonapp', url: 'https://github.com/HolyDude48/my-python-app.git']]])
+            }    
+        }
+
+        stage('Build Stage') {
+            steps{
+            	script {
+            	    def now = new Date()	
+            	    formattedTime = now.format("yyMMdd-HHmm", TimeZone.getTimeZone('UTC'))
+            	    def buildNumber = currentBuild.number
+            	    buildVersion = ${env.formattedTime} + "-" + ${buildNumber}
+            	}   
+                sh """
+                    cd my-python-app
+                    docker build -t holydude/mypythonapp:${env.buildVersion} .
+                    docker push holydude/mypythonapp:${env.buildVersion}
+                """
+            }
+        }
+        
+        stage('Deploy Stage') {
+            steps{
+                sh """
+                    cp -r /home/.aws/ ~/.aws/
+                    aws eks --region ap-south-1 update-kubeconfig --name dev_cluster --profile dev
+                    kubectl create namespace python
+                    cd ../helm
+                    yq -y -i '(.image.tag="${env.buildVersion}") values.yaml
+                    helm upgrade --install mypythonapp . -n python 
+                """
+            }
+        }
+    }
+}

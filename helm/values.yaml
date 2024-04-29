@@ -1,0 +1,27 @@
+app:
+  replicaCount: 1
+  dbHost: mysql.python.svc.cluster.local
+  dbPort: 3306
+  dbUser: root
+  dbDatabase: pythonapp
+
+image:
+  repository: holydude/mypythonapp
+  tag: 240428-1830-1
+  pullPolicy: IfNotPresent
+
+service:
+  name: pythonapp
+  type: ClusterIP
+  port: 5000
+
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 70
+
+mysql:
+  replicaCount: 1
+  image: mysql:5.7
+  port: 3306

@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pythonapp.name" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "pythonapp.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "pythonapp.name" . }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: {{ .Values.service.port }}
+        env:
+        - name: MYSQL_HOST
+          value: {{ .Values.app.dbHost }}
+        - name: MYSQL_PORT
+          value: "{{ .Values.app.dbPort }}"
+        - name: MYSQL_USER
+          value: {{ .Values.app.dbUser }}
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: db-password          
+        - name: MYSQL_DATABASE
+          value: {{ .Values.app.dbDatabase }}        
